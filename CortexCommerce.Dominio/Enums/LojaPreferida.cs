@@ -6,6 +6,5 @@ namespace CortexCommerce.Dominio.Enums
         MercadoLivre,
         Amazon,
         MagazineLuiza,
-        LojaOficial
     }
 }

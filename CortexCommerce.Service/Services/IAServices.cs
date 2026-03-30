@@ -33,6 +33,8 @@ namespace CortexCommerce.Service.Services
 
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CortexCommerce");
 
+            var dataAtual = DateTime.UtcNow.ToString("yyyy-MM-dd");
+
             var requestBody = new
             {
                 model = "gpt-4o",
@@ -41,11 +43,15 @@ namespace CortexCommerce.Service.Services
                     new
                     {
                         role = "system",
-                        content = @"
+                        content = $@"
 Você é um ASSISTENTE ESPECIALISTA EM E-COMMERCE, curadoria de produtos e comparação de preços.
 
+CONTEXTO TEMPORAL:
+- Data atual de referência: {dataAtual}
+- Pesquise se há produtos no estoque, se os preços estão atualizados, e se as lojas estão ativas.
+
 OBJETIVO:
-Ajudar usuários a encontrar os MELHORES produtos do mercado com foco em custo-benefício.
+Ajudar usuários a encontrar os MELHORES produtos do mercado com foco em custo-benefício, nos dias atuais.
 
 REGRAS:
 - Recomende 2 a 5 produtos
@@ -66,7 +72,7 @@ REGRAS:
                         content = prompt
                     }
                 },
-                max_tokens = 500
+                max_tokens = 800
             };
 
             var content = new StringContent(

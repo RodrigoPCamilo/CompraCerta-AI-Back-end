@@ -13,7 +13,7 @@ namespace CortexCommerce.Repositorio
             var optionsBuilder = new DbContextOptionsBuilder<CortexCommerceContexto>();
 
             optionsBuilder.UseSqlServer(
-                "Server=DESKTOP-CSIL4LB\\SQLEXPRESS;Database=CortexCommerceDb;Trusted_Connection=True;TrustServerCertificate=True"
+                "Server=NOTE286\\SQLEXPRESS02;Database=CortexCommerceDb;Trusted_Connection=True;TrustServerCertificate=True"
             );
 
             return new CortexCommerceContexto(optionsBuilder.Options);

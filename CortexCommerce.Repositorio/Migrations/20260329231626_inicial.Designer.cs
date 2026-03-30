@@ -12,7 +12,7 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CortexCommerce.Repositorio.Migrations
 {
     [DbContext(typeof(CortexCommerceContexto))]
-    [Migration("20260126184909_inicial")]
+    [Migration("20260329231626_inicial")]
     partial class inicial
     {
         /// <inheritdoc />
