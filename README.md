@@ -1,7 +1,7 @@
-  # CortexCommerce - BackEnd
+  # CompraCertaAI - BackEnd
   
 # Introdução:
- O CortexCommerce é um sistema desenvolvido para gerenciar usuários, preferências de consumo e interações com uma Inteligência Artificial voltada a recomendações com Links de produtos baseando-se no seu perfil com consultas personalizadas.
+ O CompraCertaAI é um sistema desenvolvido para gerenciar usuários, preferências de consumo e interações com uma Inteligência Artificial voltada a recomendações com Links de produtos baseando-se no seu perfil com consultas personalizadas.
 O projeto foi criado com o objetivo de servir como base para uma aplicação de e-commerce inteligente, integrando dados do usuário com histórico de pesquisas e respostas da IA.
 
 ## 🎯 Objetivos:
@@ -72,11 +72,11 @@ Git
 
 . Clone o repositório:
 
-git clone https://github.com/RodrigoPCamilo/CortexCommerce.git
+git clone https://github.com/RodrigoPCamilo/CompraCertaAI.git
 
 . Acesse a pasta do projeto:
 
-cd CortexCommerce
+cd CompraCertaAI
 
 . Restaure as dependências:
 
@@ -109,27 +109,27 @@ ___
 ## 📂 Estrutura do Projeto
 
 ```text
-CortexCommerce
-├── CortexCommerce.API
+CompraCertaAI
+├── CompraCertaAI.API
 │   ├── Controllers
 │   ├── Models
 │   ├── Properties
 │   ├── appsettings.json
 │   ├── Program.cs
-│   └── CortexCommerce.API.csproj
+│   └── CompraCertaAI.API.csproj
 │
-├── CortexCommerce.Aplicacao
+├── CompraCertaAI.Aplicacao
 │   ├── Aplicacao
 │   ├── DTOs
 │   ├── Interfaces
-│   └── CortexCommerce.Aplicacao.csproj
+│   └── CompraCertaAI.Aplicacao.csproj
 │
-├── CortexCommerce.Dominio
+├── CompraCertaAI.Dominio
 │   ├── Entidades
 │   ├── Enums
-│   └── CortexCommerce.Dominio.csproj
+│   └── CompraCertaAI.Dominio.csproj
 │
-├── CortexCommerce.Repositorio
+├── CompraCertaAI.Repositorio
 │   ├── Configuracoes
 │   ├── Contexto
 │   ├── Database
@@ -138,31 +138,31 @@ CortexCommerce
 │   ├── BaseRepositorio.cs
 │   ├── HistoricoPesquisaRepositorio.cs
 │   ├── UsuarioRepositorio.cs
-│   └── CortexCommerce.Repositorio.csproj
+│   └── CompraCertaAI.Repositorio.csproj
 │
-└── CortexCommerce.Service
+└── CompraCertaAI.Service
     ├── Interface
     ├── Models
     ├── Services
-    └── CortexCommerce.Service.csproj
+    └── CompraCertaAI.Service.csproj
 
 ```
 ## 🧩 Descrição das Camadas:
 
-. CortexCommerce.API
+. CompraCertaAI.API
 Responsável por expor os endpoints HTTP da aplicação, receber requisições do front-end e delegar o processamento para a camada de Aplicação.
 
-. CortexCommerce.Aplicacao
+. CompraCertaAI.Aplicacao
 Camada responsável pelos casos de uso do sistema.
 Contém regras de aplicação, validações, DTOs e coordena a comunicação entre a API, o Domínio, o Repositório e a camada de Serviços.
 
-. CortexCommerce.Dominio
+. CompraCertaAI.Dominio
 Contém as entidades do sistema, enums e as regras de negócio centrais, sendo independente das demais camadas.
 
-. CortexCommerce.Repositorio
+. CompraCertaAI.Repositorio
 Responsável pela persistência e recuperação de dados, gerenciamento da conexão com o banco de dados e execução de consultas, utilizando Dapper como tecnologia de acesso a dados.
 
-. CortexCommerce.Service
+. CompraCertaAI.Service
 Camada destinada a integrações externas e serviços auxiliares, como o módulo de Inteligência Artificial e comunicação com APIs externas.
 
 ___

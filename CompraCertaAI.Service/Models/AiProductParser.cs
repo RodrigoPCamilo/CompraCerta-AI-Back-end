@@ -1,0 +1,90 @@
+using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Text.Json;
+using CompraCertaAI.Aplicacao.DTOs.Produto;
+
+namespace CompraCertaAI.Service.Models
+{
+    public static class AiProductParser
+    {
+        public static IReadOnlyList<ProdutoDTO> ParseProducts(string? responseContent, int limit = 10)
+        {
+            if (string.IsNullOrWhiteSpace(responseContent) || limit <= 0)
+                return Array.Empty<ProdutoDTO>();
+
+            var jsonArray = ExtractJsonArray(responseContent);
+            if (string.IsNullOrWhiteSpace(jsonArray))
+                return Array.Empty<ProdutoDTO>();
+
+            try
+            {
+                var options = new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                };
+
+                var items = JsonSerializer.Deserialize<List<AiProductItem>>(jsonArray, options)
+                    ?? new List<AiProductItem>();
+
+                var uniqueKeys = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+                var result = new List<ProdutoDTO>();
+
+                foreach (var item in items)
+                {
+                    var nomeProduto = item.NomeProduto?.Trim() ?? string.Empty;
+                    var descricao = item.Descricao?.Trim() ?? string.Empty;
+                    var imagemUrl = item.ImagemUrl?.Trim() ?? string.Empty;
+                    var loja = item.Loja?.Trim() ?? string.Empty;
+                    var linkProduto = item.LinkProduto?.Trim() ?? string.Empty;
+
+                    if (string.IsNullOrWhiteSpace(nomeProduto) || string.IsNullOrWhiteSpace(loja) || string.IsNullOrWhiteSpace(linkProduto))
+                        continue;
+
+                    var dedupeKey = string.Concat(nomeProduto, "|", loja, "|", linkProduto);
+                    if (!uniqueKeys.Add(dedupeKey))
+                        continue;
+
+                    result.Add(new ProdutoDTO
+                    {
+                        NomeProduto = nomeProduto,
+                        Descricao = descricao,
+                        ImagemUrl = imagemUrl,
+                        Loja = loja,
+                        LinkProduto = linkProduto,
+                        CategoriaNome = string.Empty
+                    });
+
+                    if (result.Count >= limit)
+                        break;
+                }
+
+                return result;
+            }
+            catch
+            {
+                return Array.Empty<ProdutoDTO>();
+            }
+        }
+
+        private static string? ExtractJsonArray(string content)
+        {
+            var start = content.IndexOf('[');
+            var end = content.LastIndexOf(']');
+
+            if (start < 0 || end < 0 || end <= start)
+                return null;
+
+            return content.Substring(start, end - start + 1);
+        }
+
+        private sealed class AiProductItem
+        {
+            public string? NomeProduto { get; set; }
+            public string? Descricao { get; set; }
+            public string? ImagemUrl { get; set; }
+            public string? Loja { get; set; }
+            public string? LinkProduto { get; set; }
+        }
+    }
+}

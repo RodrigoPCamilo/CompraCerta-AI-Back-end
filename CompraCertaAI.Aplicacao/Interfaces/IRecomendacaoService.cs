@@ -1,0 +1,11 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
+using CompraCertaAI.Aplicacao.DTOs.Produto;
+
+namespace CompraCertaAI.Aplicacao.Interfaces
+{
+    public interface IRecomendacaoService
+    {
+        Task<IEnumerable<ProdutoDTO>> ObterRecomendacoesAsync(IEnumerable<int> categoriaIds, int limite = 10);
+    }
+}
