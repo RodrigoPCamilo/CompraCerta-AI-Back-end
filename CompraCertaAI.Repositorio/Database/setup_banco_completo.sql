@@ -566,19 +566,19 @@ GO
 -- ============================================================
 PRINT '';
 PRINT '=== SETUP CONCLUIDO ===';
-PRINT 'Tabelas: ' + CAST((SELECT COUNT(*) FROM sys.tables WHERE name IN (
-    'Usuarios','Categorias','Produtos','HistoricoPesquisas','UsuarioCategorias')) AS NVARCHAR) + '/5';
-PRINT 'Stored Procedures: ' + CAST((SELECT COUNT(*) FROM sys.procedures WHERE name IN (
-    'spUsuarioCriar','spUsuarioObterPorId','spUsuarioObterPorEmail','spUsuarioAtualizar',
-    'spUsuarioObterComHistorico','spRegistraHistoricoPesquisa','spListarHistoricoPorUsuario',
-    'spCategoriaListarAtivas','spCategoriaObterPorId','spCategoriaObterPorIds',
-    'spUsuarioCategoriaObterPorUsuario','spUsuarioCategoriaAtualizar',
-    'spProdutoBuscar','spProdutoObterRecomendacoes')) AS NVARCHAR) + '/14';
-PRINT 'Views: ' + CAST((SELECT COUNT(*) FROM sys.views WHERE name IN (
-    'vwHistoricoPesquisaCompleto','vwHistoricoResumo','vwUsuarioPublico','vwUsuarioAdmin')) AS NVARCHAR) + '/4';
-PRINT 'Functions: ' + CAST((SELECT COUNT(*) FROM sys.objects WHERE type = 'FN' AND name IN (
-    'fnTotalPerguntaUsuario','fnUltimaPerguntaUsuario','fnTotalUsuarios',
-    'fnTicktMedioUsuario','fnUsuarioPorCategoria')) AS NVARCHAR) + '/5';
-PRINT 'Categorias seed: ' + CAST((SELECT COUNT(*) FROM Categorias) AS NVARCHAR) + ' registros';
-PRINT 'Produtos seed: '   + CAST((SELECT COUNT(*) FROM Produtos) AS NVARCHAR) + ' registros';
+
+DECLARE @TabelasCount INT = (SELECT COUNT(*) FROM sys.tables WHERE name IN (
+    'Usuarios','Categorias','Produtos','HistoricoPesquisas','UsuarioCategorias'));
+DECLARE @SPCount INT = (SELECT COUNT(*) FROM sys.procedures WHERE name LIKE 'sp%');
+DECLARE @ViewCount INT = (SELECT COUNT(*) FROM sys.views WHERE name LIKE 'vw%');
+DECLARE @FuncCount INT = (SELECT COUNT(*) FROM sys.objects WHERE type = 'FN' AND name LIKE 'fn%');
+DECLARE @CatCount INT = (SELECT COUNT(*) FROM Categorias);
+DECLARE @ProdCount INT = (SELECT COUNT(*) FROM Produtos);
+
+PRINT 'Tabelas: ' + CAST(@TabelasCount AS NVARCHAR) + '/5';
+PRINT 'Stored Procedures: ' + CAST(@SPCount AS NVARCHAR);
+PRINT 'Views: ' + CAST(@ViewCount AS NVARCHAR);
+PRINT 'Functions: ' + CAST(@FuncCount AS NVARCHAR);
+PRINT 'Categorias seed: ' + CAST(@CatCount AS NVARCHAR) + ' registros';
+PRINT 'Produtos seed: ' + CAST(@ProdCount AS NVARCHAR) + ' registros';
 GO
