@@ -5,6 +5,7 @@ using System.Security.Claims;
 using System.Threading.Tasks;
 using CompraCertaAI.API.Models.Usuarios.Requisicao;
 using CompraCertaAI.API.Models.Usuarios.Resposta;
+using CompraCertaAI.Aplicacao.DTOs.Login;
 using CompraCertaAI.Aplicacao.DTOs.Usuario;
 using CompraCertaAI.Aplicacao.Interfaces;
 using Microsoft.AspNetCore.Authorization;
@@ -19,11 +20,16 @@ namespace CompraCertaAI.API.Controllers
     {
         private readonly IUsuarioAplicacao _usuarioService;
         private readonly ICategoriaAplicacao _categoriaAplicacao;
+        private readonly IAuthAplicacao _authAplicacao;
 
-        public UsuarioController(IUsuarioAplicacao usuarioService, ICategoriaAplicacao categoriaAplicacao)
+        public UsuarioController(
+            IUsuarioAplicacao usuarioService,
+            ICategoriaAplicacao categoriaAplicacao,
+            IAuthAplicacao authAplicacao)
         {
             _usuarioService = usuarioService;
             _categoriaAplicacao = categoriaAplicacao;
+            _authAplicacao = authAplicacao;
         }
 
 
@@ -31,8 +37,27 @@ namespace CompraCertaAI.API.Controllers
         [AllowAnonymous]
         public async Task<IActionResult> Criar([FromBody] CriarUsuarioDto dto)
         {
-            var usuario = await _usuarioService.CriarAsync(dto);
-            return CreatedAtAction(nameof(ObterPorId), new { id = usuario.Id }, usuario);
+            try
+            {
+                var usuario = await _usuarioService.CriarAsync(dto);
+
+                var auth = await _authAplicacao.LoginAsync(new LoginDto
+                {
+                    Email = dto.Email,
+                    Senha = dto.Senha
+                });
+
+                return CreatedAtAction(nameof(ObterPorId), new { id = usuario.Id }, new
+                {
+                    Usuario = usuario,
+                    Token = auth.Token,
+                    ExpiraEm = auth.ExpiraEm
+                });
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
         [Authorize]
@@ -56,20 +81,30 @@ namespace CompraCertaAI.API.Controllers
             }
 
             [Authorize]
-            [HttpPut]
-            public async Task<IActionResult> Atualizar([FromBody] AtualizarUsuarioDto dto)
+            [HttpPut("{id}")]
+            public async Task<IActionResult> Atualizar(int id, [FromBody] AtualizarUsuarioDto dto)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrEmpty(userId))
                 return Unauthorized();
 
-            var usuarioAtualizado = await _usuarioService.AtualizarAsync(
-                int.Parse(userId),
-                dto
-            );
+            if (int.Parse(userId) != id)
+                return Forbid();
 
-            return Ok(usuarioAtualizado);
+            try
+            {
+                var usuarioAtualizado = await _usuarioService.AtualizarAsync(
+                    id,
+                    dto
+                );
+
+                return Ok(usuarioAtualizado);
+            }
+            catch (ArgumentException ex)
+            {
+                return BadRequest(ex.Message);
+            }
         }
 
             [Authorize]
@@ -83,8 +118,15 @@ namespace CompraCertaAI.API.Controllers
                 if (request.CategoriaIds == null || request.CategoriaIds.Count > 5)
                     return BadRequest("Informe entre 0 e 5 categorias favoritas.");
 
-                await _categoriaAplicacao.AtualizarCategoriasPorUsuarioAsync(int.Parse(userId), request.CategoriaIds);
-                return Ok(new { mensagem = "Categorias atualizadas com sucesso." });
+                try
+                {
+                    await _categoriaAplicacao.AtualizarCategoriasPorUsuarioAsync(int.Parse(userId), request.CategoriaIds);
+                    return Ok(new { mensagem = "Categorias atualizadas com sucesso." });
+                }
+                catch (ArgumentException ex)
+                {
+                    return BadRequest(ex.Message);
+                }
             }
 
             [HttpGet("categorias/disponiveis")]

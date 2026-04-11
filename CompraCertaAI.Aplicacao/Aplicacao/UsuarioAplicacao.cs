@@ -95,16 +95,29 @@ namespace CompraCertaAI.Aplicacao.Aplicacao
             if (categoriaIds == null || categoriaIds.Count > 5)
                 throw new ArgumentException("Máximo de 5 categorias favoritas permitidas.");
 
+            var categoriaIdsNormalizados = categoriaIds.Distinct().ToList();
+            if (categoriaIdsNormalizados.Count > 5)
+                throw new ArgumentException("Máximo de 5 categorias favoritas permitidas.");
+
             var usuario = await _usuarioRepositorio.ObterPorIdAsync(usuarioId);
             if (usuario == null)
                 throw new Exception("Usuário não encontrado");
 
-            var categorias = (await _categoriaRepositorio.ListarAtivasAsync())
-                .Where(c => categoriaIds.Contains(c.Id))
+            var categoriasAtivas = (await _categoriaRepositorio.ListarAtivasAsync()).ToList();
+            var idsCategoriasAtivas = categoriasAtivas.Select(c => c.Id).ToHashSet();
+            var idsInvalidos = categoriaIdsNormalizados
+                .Where(id => !idsCategoriasAtivas.Contains(id))
+                .ToList();
+
+            if (idsInvalidos.Any())
+                throw new ArgumentException($"Categoria(s) inválida(s): {string.Join(", ", idsInvalidos)}.");
+
+            var categorias = categoriasAtivas
+                .Where(c => categoriaIdsNormalizados.Contains(c.Id))
                 .ToList();
 
             usuario.DefinirCategoriasFavoritas(categorias);
-            await _usuarioCategoriaRepositorio.AtualizarCategoriasPorUsuarioAsync(usuarioId, categoriaIds);
+            await _usuarioCategoriaRepositorio.AtualizarCategoriasPorUsuarioAsync(usuarioId, categoriaIdsNormalizados);
         }
 
         private static UsuarioDto MapearBase(Usuario usuario)
