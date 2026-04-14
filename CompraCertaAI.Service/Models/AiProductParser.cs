@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.Json;
+using System.Text.RegularExpressions;
 using CompraCertaAI.Aplicacao.DTOs.Produto;
 
 namespace CompraCertaAI.Service.Models
@@ -21,7 +22,9 @@ namespace CompraCertaAI.Service.Models
             {
                 var options = new JsonSerializerOptions
                 {
-                    PropertyNameCaseInsensitive = true
+                    PropertyNameCaseInsensitive = true,
+                    AllowTrailingCommas = true,
+                    ReadCommentHandling = JsonCommentHandling.Skip
                 };
 
                 var items = JsonSerializer.Deserialize<List<AiProductItem>>(jsonArray, options)
@@ -33,13 +36,19 @@ namespace CompraCertaAI.Service.Models
                 foreach (var item in items)
                 {
                     var nomeProduto = item.NomeProduto?.Trim() ?? string.Empty;
+                    var precoOferta = item.PrecoOferta?.Trim() ?? string.Empty;
                     var descricao = item.Descricao?.Trim() ?? string.Empty;
-                    var imagemUrl = item.ImagemUrl?.Trim() ?? string.Empty;
+                    var imagemUrl = ProdutoUrlHelper.NormalizeImageUrl(item.ImagemUrl);
                     var loja = item.Loja?.Trim() ?? string.Empty;
-                    var linkProduto = item.LinkProduto?.Trim() ?? string.Empty;
+                    var linkProduto = ProdutoUrlHelper.NormalizeProductLink(item.LinkProduto, nomeProduto, loja);
 
-                    if (string.IsNullOrWhiteSpace(nomeProduto) || string.IsNullOrWhiteSpace(loja) || string.IsNullOrWhiteSpace(linkProduto))
+                    if (string.IsNullOrWhiteSpace(nomeProduto)
+                        || string.IsNullOrWhiteSpace(loja)
+                        || string.IsNullOrWhiteSpace(precoOferta))
                         continue;
+
+                    if (string.IsNullOrWhiteSpace(linkProduto))
+                        linkProduto = $"https://www.google.com/search?q={Uri.EscapeDataString(nomeProduto)}+{Uri.EscapeDataString(loja)}";
 
                     var dedupeKey = string.Concat(nomeProduto, "|", loja, "|", linkProduto);
                     if (!uniqueKeys.Add(dedupeKey))
@@ -48,6 +57,7 @@ namespace CompraCertaAI.Service.Models
                     result.Add(new ProdutoDTO
                     {
                         NomeProduto = nomeProduto,
+                        PrecoOferta = precoOferta,
                         Descricao = descricao,
                         ImagemUrl = imagemUrl,
                         Loja = loja,
@@ -61,7 +71,7 @@ namespace CompraCertaAI.Service.Models
 
                 return result;
             }
-            catch
+            catch (Exception)
             {
                 return Array.Empty<ProdutoDTO>();
             }
@@ -75,12 +85,21 @@ namespace CompraCertaAI.Service.Models
             if (start < 0 || end < 0 || end <= start)
                 return null;
 
-            return content.Substring(start, end - start + 1);
+            var jsonString = content.Substring(start, end - start + 1);
+            
+            // Cleanup: remover espaços múltiplos fora de strings JSON
+            // Isso ajuda quando a IA retorna JSON malformado com muitos espaços
+            var cleaned = System.Text.RegularExpressions.Regex.Replace(jsonString, @"""[\s]*,", "\",");
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"""[\s]*\}", "\"}");
+            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"""[\s]*\]", "\"]");
+            
+            return cleaned;
         }
 
         private sealed class AiProductItem
         {
             public string? NomeProduto { get; set; }
+            public string? PrecoOferta { get; set; }
             public string? Descricao { get; set; }
             public string? ImagemUrl { get; set; }
             public string? Loja { get; set; }

@@ -58,6 +58,7 @@ builder.Services.AddHttpClient<IIAService, AiService>(client =>
 builder.Services.AddScoped<IRecomendacaoService, RecomendacaoService>();
 builder.Services.AddScoped<IBuscaProdutoService, BuscaProdutoService>();
 builder.Services.AddScoped<IHistoricoPesquisaService, HistoricoPesquisaService>();
+builder.Services.AddScoped<IProdutoSeedService, ProdutoSeedService>();
 
 #endregion
 
@@ -152,6 +153,23 @@ builder.Services.AddCors(options =>
 
 var app = builder.Build();
 
+using (var scope = app.Services.CreateScope())
+{
+    var logger = scope.ServiceProvider
+        .GetRequiredService<ILoggerFactory>()
+        .CreateLogger("ProdutoSeedStartup");
+
+    try
+    {
+        var produtoSeedService = scope.ServiceProvider.GetRequiredService<IProdutoSeedService>();
+        await produtoSeedService.SeedProdutosIniciaisAsync(10);
+    }
+    catch (Exception ex)
+    {
+        logger.LogError(ex, "Erro ao executar seed inicial de produtos via IA.");
+    }
+}
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -159,6 +177,7 @@ if (app.Environment.IsDevelopment())
     app.UseCors("FrontendPolicy");
 }
 
+app.UseStaticFiles();
 app.UseHttpsRedirection();
 
 app.UseAuthentication();

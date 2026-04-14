@@ -129,6 +129,7 @@ namespace CompraCertaAI.API.Controllers
                 }
             }
 
+            [AllowAnonymous]
             [HttpGet("categorias/disponiveis")]
             public async Task<IActionResult> CategoriasDisponiveis()
             {

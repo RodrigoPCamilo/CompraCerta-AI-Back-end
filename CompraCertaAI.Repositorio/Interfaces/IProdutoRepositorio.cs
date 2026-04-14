@@ -8,5 +8,7 @@ namespace CompraCertaAI.Repositorio.Interfaces
     {
         Task<IEnumerable<Produto>> BuscarAsync(string query, int? categoriaId);
         Task<IEnumerable<Produto>> ObterRecomendacoesAsync(IEnumerable<int> categoriaIds, int limite = 10);
+        Task<int> ContarAtivosPorCategoriaAsync(int categoriaId);
+        Task<int> InserirNovosAsync(IEnumerable<Produto> produtos);
     }
 }

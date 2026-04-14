@@ -24,13 +24,20 @@ namespace CompraCertaAI.API.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login(LoginRequest request)
         {
-            var response = await _authAplicacao.LoginAsync(new LoginDto
+            try
             {
-                Email = request.Email,
-                Senha = request.Senha
-            });
+                var response = await _authAplicacao.LoginAsync(new LoginDto
+                {
+                    Email = request.Email,
+                    Senha = request.Senha
+                });
 
-            return Ok( response );
+                return Ok(response);
+            }
+            catch (UnauthorizedAccessException ex)
+            {
+                return Unauthorized(new { mensagem = ex.Message });
+            }
         }
     }
 }

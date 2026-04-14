@@ -18,35 +18,52 @@ namespace CompraCertaAI.Service.Models
                 : "Sem categorias favoritas informadas.";
 
             return $@"
-Você é um mecanismo inteligente de recomendação de produtos para uma plataforma de descoberta de ofertas.
+Você é um mecanismo inteligente de recomendação de produtos para uma plataforma de descoberta de ofertas no Brasil.
 
-Sua tarefa é recomendar até 10 produtos com base nas categorias favoritas do usuário.
+Sua tarefa é recomendar EXATAMENTE 10 produtos reais e de qualidade com bases nas categorias favoritas do usuário.
 
 Categorias favoritas do usuário:
 {categoriasTexto}
 
-Regras:
-- Recomende no máximo 10 produtos
-- Os produtos devem vir de lojas conhecidas e confiáveis
-- Priorize produtos populares e com boa relação custo-benefício
-- Evite produtos duplicados
-- Os produtos devem ser relevantes para as categorias fornecidas
-- Considere lojas populares no Brasil como Amazon, Mercado Livre, Magazine Luiza, Shopee e Kabum
+INSTRUÇÕES OBRIGATÓRIAS:
+1. PREÇO: O campo ""precoOferta"" DEVE estar SEMPRE preenchido com o preço REAL em reais brasileiros.
+   - Formato CORRETO: ""R$ 199,90"", ""R$ 1.299,00"", ""R$ 59,99""
+   - Formato INCORRETO: vazio, null, ""---"", ""Consulte"", valores sem unidade monetária
+   - **DEVE conter o prefixo 'R$ ' seguido de valor numérico com sempre 2 casas decimais**
+   - Preços devem ser realistas para cada categoria e loja
 
-Retorne SOMENTE um array JSON no seguinte formato:
+2. PRODUTOS: Retorne apenas produtos reais de e-commerce brasileiro que existem:
+   - Amazon.com.br
+   - Mercado Livre
+   - Magazine Luiza
+   - Shopee
+   - Kabum
 
+3. QUALIDADE: Cada produto deve ter:
+   - Nome descritivo (entre 10 e 100 caracteres)
+   - Preço preenchido (obrigatório em formato BRL)
+   - Descrição breve (máximo 200 caracteres)
+   - URL de imagem válida
+   - Link de produto válido
+
+4. VALIDAÇÃO FINAL:
+   - Revise cada item antes de retornar
+   - Confirme que TODOS possuem preço preenchido
+   - Um item SEM preço preenchido será descartado
+
+Exemplo CORRETO:
 [
   {{
-    ""nomeProduto"": """",
-    ""descricao"": """",
-    ""imagemUrl"": """",
-    ""loja"": """",
-    ""linkProduto"": """"
+    ""nomeProduto"": ""Smartphone Samsung Galaxy A15 4G 128GB"",
+    ""precoOferta"": ""R$ 799,99"",
+    ""descricao"": ""Smartphone com tela 6.5 polegadas e bateria de 5000mAh"",
+    ""imagemUrl"": ""https://images.unsplash.com/photo-1511707267537-b85faf00021e"",
+    ""loja"": ""Amazon"",
+    ""linkProduto"": ""https://www.amazon.com.br/s?k=samsung+galaxy+a15""
   }}
 ]
 
-Não inclua explicações, comentários ou texto fora do JSON.
-Retorne apenas o JSON.
+Retorne SOMENTE um array JSON válido. SEM explicações ou comentários.
 ";
         }
 
@@ -55,36 +72,96 @@ Retorne apenas o JSON.
             var queryLimpa = string.IsNullOrWhiteSpace(query) ? "" : query.Trim();
 
             return $@"
-Você é um mecanismo de busca de produtos para uma plataforma de ofertas.
+Você é um mecanismo de busca de produtos para uma plataforma de ofertas do Brasil.
 
 O usuário realizou a seguinte busca:
-
 {queryLimpa}
 
-Sua tarefa é retornar até 10 produtos relevantes relacionados à busca.
+Sua tarefa é retornar até 10 produtos REAIS e relevantes relacionados à busca, com preços atualizados.
 
-Regras:
-- Retorne produtos reais e populares
-- Priorize produtos vendidos em lojas confiáveis
-- Evite produtos duplicados
-- Priorize produtos com boa avaliação ou popularidade
-- Os resultados devem ser altamente relevantes para a busca do usuário
-- Considere lojas populares no Brasil como Amazon, Mercado Livre, Magazine Luiza, Shopee e Kabum
+INSTRUÇÕES OBRIGATÓRIAS:
+1. PREÇO: O campo ""precoOferta"" DEVE estar SEMPRE preenchido com o preço REAL em reais brasileiros.
+   - Formato CORRETO: ""R$ 199,90"", ""R$ 1.299,00"", ""R$ 59,99""
+   - Formato INCORRETO: vazio, null, ""---"", ""Consulte"", valores sem unidade monetária
+   - **DEVE conter o prefixo 'R$ ' seguido de valor numérico com SEMPRE 2 casas decimais**
+   - Preços devem ser realistas e corresponder ao produto descrito
 
-Retorne SOMENTE um array JSON no formato:
+2. BUSCA: Retorne apenas produtos que correspondem EXATAMENTE à busca do usuário
+   - Relevância máxima
+   - Produtos reais de lojas confiáveis (Amazon, Mercado Livre, Magazine Luiza, Shopee, Kabum)
 
+3. QUALIDADE: Cada produto deve ter:
+   - Nome descritivo que corresponde à busca
+   - Preço preenchido (obrigatório em formato BRL)
+   - Descrição breve
+   - URL de imagem válida
+   - Link de produto válido
+
+Exemplo CORRETO:
 [
   {{
-    ""nomeProduto"": """",
-    ""descricao"": """",
-    ""imagemUrl"": """",
-    ""loja"": """",
-    ""linkProduto"": """"
+    ""nomeProduto"": ""Headphone Bluetooth Sony WH-1000XM5"",
+    ""precoOferta"": ""R$ 1.499,00"",
+    ""descricao"": ""Headphone com cancelamento de ruído ativo e bateria de 40h"",
+    ""imagemUrl"": ""https://images.unsplash.com/photo-1505740420928-5e560c06d30e"",
+    ""loja"": ""Amazon"",
+    ""linkProduto"": ""https://www.amazon.com.br/s?k=sony+headphone+wh1000xm5""
   }}
 ]
 
-Não inclua explicações ou textos fora do JSON.
-Retorne apenas o JSON.
+Retorne SOMENTE um array JSON válido. SEM explicações ou comentários.
+";
+        }
+
+        public static string BuildCategorySeedPrompt(string categoria, int quantidade)
+        {
+            var categoriaLimpa = string.IsNullOrWhiteSpace(categoria) ? "Produtos Gerais" : categoria.Trim();
+            var quantidadeAjustada = quantidade <= 0 ? 1 : quantidade;
+
+            return $@"
+Você é um gerador de dados de produtos para uma plataforma de e-commerce brasileira.
+
+sua tarefa é retornar UMA LISTA com EXATAMENTE {quantidadeAjustada} produtos REAIS para esta categoria:
+
+Categoria: {categoriaLimpa}
+
+INSTRUÇÕES OBRIGATÓRIAS:
+1. PREÇO: O campo ""precoOferta"" DEVE estar SEMPRE preenchido com o preço REAL em reais brasileiros.
+   - Formato CORRETO: ""R$ 199,90"", ""R$ 1.299,00"", ""R$ 59,99""
+   - Formato INCORRETO: vazio, null, ""---"", ""Consulte"", valores numéricos sem R$
+   - **DEVE conter SEMPRE o prefixo 'R$ ' seguido de valor numérico com SEMPRE 2 casas decimais**
+   - Preços devem ser REALISTAS e compatíveis com produtos brasileiros atuais
+
+2. QUANTIDADE: Retorne exatamente {quantidadeAjustada} produtos reais e distintos da categoria
+   - Produtos conhecidos e populares
+   - Marcas reais e confiáveis
+   - Preços condizentes com o mercado brasileiro
+
+3. QUALIDADE OBRIGATÓRIA: Cada produto DEVE ter:
+   - Nome descritivo e completo (marca + modelo/tipo)
+   - Preço preenchido em BRL (R$ X,XX) — NÃO DEIXAR VAZIO
+   - Descrição funcional breve (características principais)
+   - URL de imagem válida
+   - Loja real (Amazon, Mercado Livre, Magazine Luiza, Shopee, Kabum, etc.)
+   - Link do produto válido para a loja
+
+4. VALIDAÇÃO: Um item SEM preço preenchido será rejeito e não importado.
+   - Se não conseguir preço real para um produto, NÃO inclua na lista
+   - Qualidade sobre quantidade: prefira menos itens com preços reais a preencher com fabricados
+
+Exemplo CORRETO para {categoriaLimpa}:
+[
+  {{
+    ""nomeProduto"": ""Smartphone Samsung Galaxy A15 128GB"",
+    ""precoOferta"": ""R$ 749,00"",
+    ""descricao"": ""Smartphone com processador Exynos, tela AMOLED 6.5 polegadas e câmera de 50MP"",
+    ""imagemUrl"": ""https://images.unsplash.com/photo-1511707267537-b85faf00021e"",
+    ""loja"": ""Amazon"",
+    ""linkProduto"": ""https://www.amazon.com.br/s?k=samsung+galaxy+a15""
+  }}
+]
+
+🔴 **CRÍTICO**: Retorne SOMENTE um array JSON válido. Sem exceções, sem explicações, sem comentários extras.
 ";
         }
     }

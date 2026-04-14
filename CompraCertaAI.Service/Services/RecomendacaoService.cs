@@ -58,10 +58,11 @@ namespace CompraCertaAI.Service.Services
             {
                 Id = p.Id,
                 NomeProduto = p.NomeProduto,
+                 PrecoOferta = p.PrecoOferta,
                 Descricao = p.Descricao,
-                ImagemUrl = p.ImagemUrl,
+                ImagemUrl = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl),
                 Loja = p.Loja,
-                LinkProduto = p.LinkProduto,
+                LinkProduto = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
                 CategoriaNome = mapeamentoCategorias.ContainsKey(p.CategoriaId)
                     ? mapeamentoCategorias[p.CategoriaId]
                     : string.Empty

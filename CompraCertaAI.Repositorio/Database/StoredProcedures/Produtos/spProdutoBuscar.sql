@@ -10,6 +10,7 @@ BEGIN
     SELECT
         p.Id,
         p.NomeProduto,
+        p.PrecoOferta,
         p.Descricao,
         p.ImagemUrl,
         p.Loja,

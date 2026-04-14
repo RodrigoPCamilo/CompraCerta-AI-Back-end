@@ -4,6 +4,7 @@ using CompraCertaAI.Repositorio.Contexto;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace CompraCertaAI.Repositorio.Migrations
 {
     [DbContext(typeof(CompraCertaAIContexto))]
-    partial class CompraCertaAIContextoModelSnapshot : ModelSnapshot
+    [Migration("20260414022932_AtualizarStoredProceduresPrecoOferta")]
+    partial class AtualizarStoredProceduresPrecoOferta
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -166,11 +169,8 @@ namespace CompraCertaAI.Repositorio.Migrations
                         .HasColumnName("NomeProduto");
 
                     b.Property<string>("PrecoOferta")
-                        .IsRequired()
-                        .ValueGeneratedOnAdd()
                         .HasMaxLength(50)
                         .HasColumnType("nvarchar(50)")
-                        .HasDefaultValue("R$ 0,00")
                         .HasColumnName("PrecoOferta");
 
                     b.HasKey("Id");

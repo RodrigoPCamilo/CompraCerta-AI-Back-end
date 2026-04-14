@@ -6,6 +6,7 @@ namespace CompraCertaAI.Dominio.Entidades
     {
         public int Id { get; private set; }
         public string NomeProduto { get; private set; }
+        public string PrecoOferta { get; private set; }
         public string Descricao { get; private set; }
         public string ImagemUrl { get; private set; }
         public string Loja { get; private set; }
@@ -19,6 +20,7 @@ namespace CompraCertaAI.Dominio.Entidades
 
         public Produto(
             string nomeProduto,
+            string precoOferta,
             string descricao,
             string imagemUrl,
             string loja,
@@ -33,6 +35,7 @@ namespace CompraCertaAI.Dominio.Entidades
                 throw new ArgumentException("Link do produto é obrigatório.");
 
             NomeProduto = nomeProduto;
+            PrecoOferta = precoOferta ?? string.Empty;
             Descricao = descricao ?? string.Empty;
             ImagemUrl = imagemUrl ?? string.Empty;
             Loja = loja;

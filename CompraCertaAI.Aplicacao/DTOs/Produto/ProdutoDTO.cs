@@ -4,6 +4,7 @@ namespace CompraCertaAI.Aplicacao.DTOs.Produto
     {
         public int Id { get; set; }
         public string NomeProduto { get; set; }
+        public string PrecoOferta { get; set; }
         public string Descricao { get; set; }
         public string ImagemUrl { get; set; }
         public string Loja { get; set; }
