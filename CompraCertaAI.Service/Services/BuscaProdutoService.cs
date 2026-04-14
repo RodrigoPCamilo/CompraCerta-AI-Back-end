@@ -50,71 +50,45 @@ namespace CompraCertaAI.Service.Services
                     }
                     else
                     {
-                        var produtosFallback = await _produtoRepositorio.BuscarAsync(query, categoriaId);
-                        resultado = produtosFallback
-                            .Take(10)
-                            .Select(p => new ProdutoDTO
-                            {
-                                Id = p.Id,
-                                NomeProduto = p.NomeProduto,
-                                PrecoOferta = p.PrecoOferta,
-                                Descricao = p.Descricao,
-                                ImagemUrl = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl),
-                                Loja = p.Loja,
-                                LinkProduto = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
-                                CategoriaNome = mapeamentoCategorias.ContainsKey(p.CategoriaId)
-                                    ? mapeamentoCategorias[p.CategoriaId]
-                                    : string.Empty
-                            });
+                        resultado = await BuscarNoBancoAsync(query, categoriaId, mapeamentoCategorias);
                     }
                 }
                 else
                 {
-                    var produtosFallback = await _produtoRepositorio.BuscarAsync(query, categoriaId);
-                    resultado = produtosFallback
-                        .Take(10)
-                        .Select(p => new ProdutoDTO
-                        {
-                            Id = p.Id,
-                            NomeProduto = p.NomeProduto,
-                             PrecoOferta = p.PrecoOferta,
-                            Descricao = p.Descricao,
-                            ImagemUrl = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl),
-                            Loja = p.Loja,
-                            LinkProduto = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
-                            CategoriaNome = mapeamentoCategorias.ContainsKey(p.CategoriaId)
-                                ? mapeamentoCategorias[p.CategoriaId]
-                                : string.Empty
-                        });
+                    resultado = await BuscarNoBancoAsync(query, categoriaId, mapeamentoCategorias);
                 }
             }
             catch
             {
-                var produtosFallback = await _produtoRepositorio.BuscarAsync(query, categoriaId);
-                resultado = produtosFallback
-                    .Take(10)
-                    .Select(p => new ProdutoDTO
-                    {
-                        Id = p.Id,
-                        NomeProduto = p.NomeProduto,
-                        PrecoOferta = p.PrecoOferta,
-                        Descricao = p.Descricao,
-                        ImagemUrl = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl),
-                        Loja = p.Loja,
-                        LinkProduto = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
-                        CategoriaNome = mapeamentoCategorias.ContainsKey(p.CategoriaId)
-                            ? mapeamentoCategorias[p.CategoriaId]
-                            : string.Empty
-                    });
+                resultado = await BuscarNoBancoAsync(query, categoriaId, mapeamentoCategorias);
             }
 
             // Registra busca no histórico automaticamente
             if (!string.IsNullOrWhiteSpace(query))
-            {
                 await _historicoPesquisaRepositorio.AdicionarPesquisaAsync(usuarioId, query);
-            }
 
             return resultado;
+        }
+
+        private async Task<IEnumerable<ProdutoDTO>> BuscarNoBancoAsync(
+            string query, int? categoriaId, Dictionary<int, string> mapeamentoCategorias)
+        {
+            var produtos = await _produtoRepositorio.BuscarAsync(query, categoriaId);
+            return produtos
+                .Take(10)
+                .Select(p => new ProdutoDTO
+                {
+                    Id           = p.Id,
+                    NomeProduto  = p.NomeProduto,
+                    PrecoOferta  = p.PrecoOferta,
+                    Descricao    = p.Descricao,
+                    ImagemUrl    = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl, p.NomeProduto),
+                    Loja         = p.Loja,
+                    LinkProduto  = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
+                    CategoriaNome = mapeamentoCategorias.ContainsKey(p.CategoriaId)
+                        ? mapeamentoCategorias[p.CategoriaId]
+                        : string.Empty
+                });
         }
     }
 }

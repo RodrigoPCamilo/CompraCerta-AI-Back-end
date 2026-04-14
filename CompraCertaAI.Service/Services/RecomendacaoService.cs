@@ -49,20 +49,20 @@ namespace CompraCertaAI.Service.Services
             }
             catch
             {
-                // Se a IA falhar, mantém o fluxo com fallback no banco.
+                // fallback para o banco
             }
 
             var produtos = await _produtoRepositorio.ObterRecomendacoesAsync(ids, limite);
 
             return produtos.Select(p => new ProdutoDTO
             {
-                Id = p.Id,
-                NomeProduto = p.NomeProduto,
-                 PrecoOferta = p.PrecoOferta,
-                Descricao = p.Descricao,
-                ImagemUrl = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl),
-                Loja = p.Loja,
-                LinkProduto = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
+                Id            = p.Id,
+                NomeProduto   = p.NomeProduto,
+                PrecoOferta   = p.PrecoOferta,
+                Descricao     = p.Descricao,
+                ImagemUrl     = ProdutoUrlHelper.NormalizeImageUrl(p.ImagemUrl, p.NomeProduto),
+                Loja          = p.Loja,
+                LinkProduto   = ProdutoUrlHelper.NormalizeProductLink(p.LinkProduto, p.NomeProduto, p.Loja),
                 CategoriaNome = mapeamentoCategorias.ContainsKey(p.CategoriaId)
                     ? mapeamentoCategorias[p.CategoriaId]
                     : string.Empty

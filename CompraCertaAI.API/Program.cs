@@ -13,8 +13,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 
-
-
 var builder = WebApplication.CreateBuilder(args);
 
 #region Banco de Dados (Dapper)
@@ -52,7 +50,8 @@ builder.Services.AddScoped<IBuscaProdutoAplicacao, BuscaProdutoAplicacao>();
 
 builder.Services.AddHttpClient<IIAService, AiService>(client =>
 {
-    client.Timeout = TimeSpan.FromSeconds(30);
+    // Timeout maior para acomodar resposta com 10 produtos (4000 tokens)
+    client.Timeout = TimeSpan.FromSeconds(60);
     client.DefaultRequestHeaders.UserAgent.ParseAdd("CompraCertaAI");
 });
 builder.Services.AddScoped<IRecomendacaoService, RecomendacaoService>();
@@ -136,6 +135,8 @@ builder.Services.AddSwaggerGen(c =>
 
 #endregion
 
+#region CORS
+
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("FrontendPolicy", policy =>
@@ -145,13 +146,18 @@ builder.Services.AddCors(options =>
             .AllowAnyMethod()
             .AllowCredentials()
             .WithOrigins(
-                "http://localhost:5173"
+                "http://localhost:5173",
+                "http://localhost:5174",
+                "http://localhost:3000"
             );
     });
 });
 
+#endregion
 
 var app = builder.Build();
+
+#region Seed inicial de produtos
 
 using (var scope = app.Services.CreateScope())
 {
@@ -170,11 +176,15 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+#endregion
+
+// CORS deve vir ANTES de Authentication/Authorization
+app.UseCors("FrontendPolicy");
+
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
-    app.UseCors("FrontendPolicy");
 }
 
 app.UseStaticFiles();

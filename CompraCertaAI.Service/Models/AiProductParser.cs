@@ -1,8 +1,6 @@
 using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Text.Json;
-using System.Text.RegularExpressions;
 using CompraCertaAI.Aplicacao.DTOs.Produto;
 
 namespace CompraCertaAI.Service.Models
@@ -36,32 +34,38 @@ namespace CompraCertaAI.Service.Models
                 foreach (var item in items)
                 {
                     var nomeProduto = item.NomeProduto?.Trim() ?? string.Empty;
-                    var precoOferta = item.PrecoOferta?.Trim() ?? string.Empty;
-                    var descricao = item.Descricao?.Trim() ?? string.Empty;
-                    var imagemUrl = ProdutoUrlHelper.NormalizeImageUrl(item.ImagemUrl);
-                    var loja = item.Loja?.Trim() ?? string.Empty;
-                    var linkProduto = ProdutoUrlHelper.NormalizeProductLink(item.LinkProduto, nomeProduto, loja);
+                    var precoOferta  = item.PrecoOferta?.Trim() ?? string.Empty;
+                    var descricao    = item.Descricao?.Trim() ?? string.Empty;
+                    var loja         = item.Loja?.Trim() ?? string.Empty;
 
-                    if (string.IsNullOrWhiteSpace(nomeProduto)
-                        || string.IsNullOrWhiteSpace(loja)
-                        || string.IsNullOrWhiteSpace(precoOferta))
+                    // Campos mínimos obrigatórios
+                    if (string.IsNullOrWhiteSpace(nomeProduto) || string.IsNullOrWhiteSpace(loja))
                         continue;
 
-                    if (string.IsNullOrWhiteSpace(linkProduto))
-                        linkProduto = $"https://www.google.com/search?q={Uri.EscapeDataString(nomeProduto)}+{Uri.EscapeDataString(loja)}";
+                    if (string.IsNullOrWhiteSpace(precoOferta))
+                        precoOferta = "Consulte na loja";
 
-                    var dedupeKey = string.Concat(nomeProduto, "|", loja, "|", linkProduto);
+                    // Passa nomeProduto para que o helper escolha imagem e link corretos
+                    var imagemUrl   = ProdutoUrlHelper.NormalizeImageUrl(item.ImagemUrl, nomeProduto);
+                    var linkProduto = ProdutoUrlHelper.NormalizeProductLink(item.LinkProduto, nomeProduto, loja);
+
+                    if (string.IsNullOrWhiteSpace(linkProduto))
+                        linkProduto = ProdutoUrlHelper.GenerateSearchLink(nomeProduto, loja);
+
+                    var dedupeKey = $"{nomeProduto}|{loja}";
                     if (!uniqueKeys.Add(dedupeKey))
                         continue;
 
                     result.Add(new ProdutoDTO
                     {
-                        NomeProduto = nomeProduto,
-                        PrecoOferta = precoOferta,
-                        Descricao = descricao,
-                        ImagemUrl = imagemUrl,
-                        Loja = loja,
-                        LinkProduto = linkProduto,
+                        // id = 0 para produtos gerados pela IA (não estão no banco)
+                        // O front deve aceitar id = 0 como válido
+                        NomeProduto  = nomeProduto,
+                        PrecoOferta  = precoOferta,
+                        Descricao    = descricao,
+                        ImagemUrl    = imagemUrl,
+                        Loja         = loja,
+                        LinkProduto  = linkProduto,
                         CategoriaNome = string.Empty
                     });
 
@@ -71,7 +75,7 @@ namespace CompraCertaAI.Service.Models
 
                 return result;
             }
-            catch (Exception)
+            catch
             {
                 return Array.Empty<ProdutoDTO>();
             }
@@ -79,31 +83,45 @@ namespace CompraCertaAI.Service.Models
 
         private static string? ExtractJsonArray(string content)
         {
+            content = content.Trim();
+
+            // Caso 1: já é um array JSON
+            if (content.StartsWith("["))
+            {
+                var end = content.LastIndexOf(']');
+                return end > 0 ? content.Substring(0, end + 1) : null;
+            }
+
+            // Caso 2: objeto JSON com uma propriedade de array (ex: { "produtos": [...] })
+            if (content.StartsWith("{"))
+            {
+                try
+                {
+                    using var doc = JsonDocument.Parse(content);
+                    foreach (var prop in doc.RootElement.EnumerateObject())
+                        if (prop.Value.ValueKind == JsonValueKind.Array)
+                            return prop.Value.GetRawText();
+                }
+                catch { }
+            }
+
+            // Caso 3: texto misto / markdown com JSON embutido
             var start = content.IndexOf('[');
-            var end = content.LastIndexOf(']');
+            var lastEnd = content.LastIndexOf(']');
+            if (start >= 0 && lastEnd > start)
+                return content.Substring(start, lastEnd - start + 1);
 
-            if (start < 0 || end < 0 || end <= start)
-                return null;
-
-            var jsonString = content.Substring(start, end - start + 1);
-            
-            // Cleanup: remover espaços múltiplos fora de strings JSON
-            // Isso ajuda quando a IA retorna JSON malformado com muitos espaços
-            var cleaned = System.Text.RegularExpressions.Regex.Replace(jsonString, @"""[\s]*,", "\",");
-            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"""[\s]*\}", "\"}");
-            cleaned = System.Text.RegularExpressions.Regex.Replace(cleaned, @"""[\s]*\]", "\"]");
-            
-            return cleaned;
+            return null;
         }
 
         private sealed class AiProductItem
         {
-            public string? NomeProduto { get; set; }
-            public string? PrecoOferta { get; set; }
-            public string? Descricao { get; set; }
-            public string? ImagemUrl { get; set; }
-            public string? Loja { get; set; }
-            public string? LinkProduto { get; set; }
+            public string? NomeProduto  { get; set; }
+            public string? PrecoOferta  { get; set; }
+            public string? Descricao    { get; set; }
+            public string? ImagemUrl    { get; set; }
+            public string? Loja         { get; set; }
+            public string? LinkProduto  { get; set; }
         }
     }
 }

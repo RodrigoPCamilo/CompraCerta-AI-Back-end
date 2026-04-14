@@ -6,8 +6,7 @@ using CompraCertaAI.Service.Interface;
 
 namespace CompraCertaAI.Service.Services
 {
-    
-  public class AiService : IIAService
+    public class AiService : IIAService
     {
         private readonly HttpClient _httpClient;
         private readonly IConfiguration _config;
@@ -30,8 +29,6 @@ namespace CompraCertaAI.Service.Services
             _httpClient.DefaultRequestHeaders.Clear();
             _httpClient.DefaultRequestHeaders.Authorization =
                 new AuthenticationHeaderValue("Bearer", apiKey);
-
-
             _httpClient.DefaultRequestHeaders.UserAgent.ParseAdd("CompraCertaAI");
 
             var requestBody = new
@@ -41,12 +38,20 @@ namespace CompraCertaAI.Service.Services
                 {
                     new
                     {
+                        role = "system",
+                        content = "Você é um assistente especializado em produtos de e-commerce brasileiro. Sempre responda SOMENTE com um array JSON válido, sem markdown, sem explicações, sem blocos de código. Sua resposta deve começar com [ e terminar com ]."
+                    },
+                    new
+                    {
                         role = "user",
                         content = prompt
                     }
                 },
-                temperature = 0.2,
-                max_tokens = 1000
+                temperature = 0.3,
+                // 4000 tokens = espaço suficiente para 10 produtos com todos os campos
+                max_tokens = 4000,
+                // Forçar resposta JSON puro
+                response_format = new { type = "json_object" }
             };
 
             var content = new StringContent(
@@ -69,11 +74,36 @@ namespace CompraCertaAI.Service.Services
             if (!doc.RootElement.TryGetProperty("choices", out var choices) || choices.GetArrayLength() == 0)
                 return "[]";
 
-            var contentElement = choices[0]
+            var contentStr = choices[0]
                 .GetProperty("message")
-                .GetProperty("content");
+                .GetProperty("content")
+                .GetString() ?? "[]";
 
-            return contentElement.GetString() ?? "[]";
+            // Se a resposta for um objeto JSON com uma propriedade de array, extrair o array
+            // (acontece quando response_format = json_object e o modelo retorna { "produtos": [...] })
+            contentStr = contentStr.Trim();
+            if (contentStr.StartsWith("{"))
+            {
+                try
+                {
+                    using var innerDoc = JsonDocument.Parse(contentStr);
+                    // Procura qualquer propriedade que seja um array
+                    foreach (var prop in innerDoc.RootElement.EnumerateObject())
+                    {
+                        if (prop.Value.ValueKind == JsonValueKind.Array)
+                        {
+                            contentStr = prop.Value.GetRawText();
+                            break;
+                        }
+                    }
+                }
+                catch
+                {
+                    // mantém o contentStr original
+                }
+            }
+
+            return contentStr;
         }
     }
 }
