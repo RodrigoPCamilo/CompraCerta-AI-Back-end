@@ -42,7 +42,7 @@ namespace CompraCertaAI.API.Controllers
             var categorias = await _categoriaAplicacao.ObterCategoriasPorUsuarioAsync(id);
             var categoriaIds = System.Linq.Enumerable.Select(categorias, c => c.Id);
 
-            var produtos = await _recomendacaoService.ObterRecomendacoesAsync(categoriaIds, 10);
+            var produtos = await _recomendacaoService.ObterRecomendacoesAsync(categoriaIds, 12);
 
             return Ok(produtos);
         }

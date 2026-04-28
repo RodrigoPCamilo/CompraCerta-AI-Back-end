@@ -50,9 +50,8 @@ builder.Services.AddScoped<IBuscaProdutoAplicacao, BuscaProdutoAplicacao>();
 
 builder.Services.AddHttpClient<IIAService, AiService>(client =>
 {
-    // Timeout maior para acomodar resposta com 10 produtos (4000 tokens)
     client.Timeout = TimeSpan.FromSeconds(60);
-    client.DefaultRequestHeaders.UserAgent.ParseAdd("CompraCertaAI");
+    client.DefaultRequestHeaders.UserAgent.ParseAdd("CompraCertaAI/1.0");
 });
 builder.Services.AddScoped<IRecomendacaoService, RecomendacaoService>();
 builder.Services.AddScoped<IBuscaProdutoService, BuscaProdutoService>();

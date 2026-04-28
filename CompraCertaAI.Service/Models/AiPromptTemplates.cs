@@ -5,104 +5,124 @@ namespace CompraCertaAI.Service.Models
 {
     public static class AiPromptTemplates
     {
-        private const string LojasBrasil =
-            "Amazon, Mercado Livre, Magazine Luiza (Magalu), Shopee, Americanas, Kabum";
+        // Mapeamento das categorias do banco → descrição detalhada para a IA
+        // Garante que "Fitness" gere produtos de fitness, não eletrônicos
+        private static readonly Dictionary<string, string> MapCategoria = new(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["Tecnologia"] = "eletrônicos, smartphones, notebooks, tablets, fones de ouvido, smartwatches, gadgets tecnológicos",
+            ["Games"]      = "jogos para PS5/Xbox/Nintendo/PC, consoles PlayStation/Xbox/Nintendo Switch, controles e acessórios gamer",
+            ["Casa"]       = "decoração, móveis, utensílios domésticos, organização, cama mesa banho, eletrodomésticos",
+            ["Livros"]     = "livros de ficção, romance, fantasia, técnicos, educação, autoajuda, mangá, HQ",
+            ["Fitness"]    = "equipamentos de academia, halteres, kettlebell, esteira, bicicleta ergométrica, tapete yoga, suplementos proteína whey, roupas esportivas, tênis para corrida",
+            ["Moda"]       = "roupas, calçados, tênis, bolsas, acessórios de moda",
+            ["Beleza"]     = "cosméticos, perfumes, skincare, maquiagem, cuidados pessoais",
+            ["Esportes"]   = "artigos esportivos, bolas, raquetes, material esportivo",
+        };
+
+        // Lojas por tipo de produto — evita Kabum em fitness/moda
+        private static readonly Dictionary<string, string> LojasPorTema = new(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["fitness"]      = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas",
+            ["equipamentos"] = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas",
+            ["livros"]       = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas",
+            ["roupas"]       = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas",
+            ["moda"]         = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas",
+            ["games"]        = "Amazon, Kabum, Magazine Luiza, Shopee, Americanas",
+            ["tecnologia"]   = "Amazon, Kabum, Magazine Luiza, Shopee, Mercado Livre",
+            ["casa"]         = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas",
+        };
+
+        // Faixas de preço por tema para guiar a IA
+        private static readonly Dictionary<string, string> FaixasPreco = new(
+            StringComparer.OrdinalIgnoreCase)
+        {
+            ["fitness"]    = "halteres: R$ 50-300, whey protein: R$ 80-200, tênis esportivo: R$ 150-600, esteira: R$ 800-3000",
+            ["games"]      = "jogos: R$ 150-350, consoles: R$ 2.500-5.000, acessórios: R$ 100-500",
+            ["tecnologia"] = "smartphone: R$ 800-6000, notebook: R$ 2000-8000, fone: R$ 100-1500",
+            ["casa"]       = "utensílio: R$ 30-200, decoração: R$ 50-500, eletrodoméstico: R$ 200-3000",
+            ["livros"]     = "livros: R$ 20-80, box: R$ 80-300",
+            ["moda"]       = "tênis: R$ 150-800, roupa: R$ 50-300",
+        };
+
+        private const string LojasGeral = "Amazon, Mercado Livre, Magazine Luiza, Shopee, Americanas, Kabum";
 
         public static string BuildRecommendationPrompt(IEnumerable<string> categorias)
         {
-            var categoriasLimpas = categorias?
+            var cats = categorias?
                 .Where(c => !string.IsNullOrWhiteSpace(c))
-                .Select(c => c.Trim())
-                .Distinct()
-                .ToList() ?? new List<string>();
+                .Select(c => c.Trim()).Distinct().ToList()
+                ?? new List<string>();
 
-            var categoriasTexto = categoriasLimpas.Any()
-                ? string.Join(", ", categoriasLimpas)
-                : "Eletrônicos, Moda, Casa";
+            if (!cats.Any()) cats = new List<string> { "Tecnologia" };
 
-            return $@"Retorne exatamente 10 produtos em oferta do e-commerce brasileiro, baseados nas categorias: {categoriasTexto}.
+            // Expande cada categoria para sua descrição detalhada
+            var temasExpandidos = cats.Select(c =>
+                MapCategoria.TryGetValue(c, out var desc) ? desc : c).ToList();
 
-Lojas permitidas: {LojasBrasil}.
+            var tema = string.Join(", ", temasExpandidos);
+            var lojas = ResolverLojas(string.Join(" ", cats));
+            var faixa = ResolverFaixaPreco(string.Join(" ", cats));
+            var count = lojas.Split(',').Length * 2;
 
-Regras obrigatórias:
-- Retorne EXATAMENTE 10 itens no array
-- Cada item deve ter: nomeProduto, precoOferta (formato ""R$ 0,00""), descricao, imagemUrl, loja, linkProduto
-- linkProduto deve ser a URL de busca da loja pelo produto (ex: https://www.amazon.com.br/s?k=produto)
-- imagemUrl use URLs do Unsplash relacionadas ao produto (ex: https://images.unsplash.com/photo-ID?w=400)
-- Distribua os produtos entre as lojas permitidas
-- Preços devem ser realistas para o mercado brasileiro atual
+            return
+$@"Liste EXATAMENTE {count} produtos em promoção no Brasil sobre: {tema}.
+2 produtos de cada loja: {lojas}.
 
-Retorne SOMENTE o array JSON, sem explicações:
-[
-  {{
-    ""nomeProduto"": ""Nome completo do produto"",
-    ""precoOferta"": ""R$ 0,00"",
-    ""descricao"": ""Breve descrição do produto"",
-    ""imagemUrl"": ""https://images.unsplash.com/photo-ID?w=400"",
-    ""loja"": ""Nome da loja"",
-    ""linkProduto"": ""https://url-de-busca-na-loja""
-  }}
-]";
+REGRAS OBRIGATÓRIAS:
+1. Produtos DEVEM ser relacionados ao tema: {tema}
+2. Nome com marca (ex: ""Adidas Superstar"", ""Sony PlayStation 5"")  
+3. precoOferta: valor real em BRL. Referência: {faixa}
+4. precoOriginal: maior que precoOferta
+5. NUNCA deixe precoOferta zerado ou nulo
+
+JSON array de {count} itens:
+[{{""nomeProduto"":""nome com marca"",""precoOferta"":""R$ 99,90"",""precoOriginal"":""R$ 149,90"",""desconto"":""33%"",""descricao"":""descrição do produto"",""imagemUrl"":"""",""loja"":""{lojas.Split(',')[0].Trim()}"",""linkProduto"":""""}}]";
         }
 
         public static string BuildSearchPrompt(string query)
         {
-            var queryLimpa = string.IsNullOrWhiteSpace(query) ? "produto" : query.Trim();
+            var q     = string.IsNullOrWhiteSpace(query) ? "produto" : query.Trim();
+            var lojas = ResolverLojas(q);
+            var faixa = ResolverFaixaPreco(q);
+            var count = lojas.Split(',').Length * 2;
 
-            return $@"Retorne exatamente 10 produtos em oferta relacionados à busca: ""{queryLimpa}"".
+            return
+$@"BUSCA: ""{q}""
+Liste EXATAMENTE {count} produtos de ""{q}"" em promoção no Brasil, 2 de cada loja: {lojas}.
 
-Lojas permitidas: {LojasBrasil}.
+REGRAS:
+1. TODOS os {count} produtos DEVEM ser sobre ""{q}""
+2. Nome com marca sempre incluída
+3. precoOferta: valor real em BRL. Referência: {faixa}
+4. precoOriginal: maior que precoOferta
+5. NUNCA use preço zero
 
-Regras obrigatórias:
-- Retorne EXATAMENTE 10 itens no array
-- Todos os produtos devem ser relevantes para a busca ""{queryLimpa}""
-- Cada item deve ter: nomeProduto, precoOferta (formato ""R$ 0,00""), descricao, imagemUrl, loja, linkProduto
-- linkProduto deve ser a URL de busca da loja pelo produto (ex: https://www.amazon.com.br/s?k={System.Uri.EscapeDataString(queryLimpa)})
-- imagemUrl use URLs do Unsplash relacionadas ao produto
-- Distribua os produtos entre as lojas: Amazon, Mercado Livre, Shopee, Magazine Luiza, Americanas
-- Preços devem ser realistas para o mercado brasileiro atual
-
-Retorne SOMENTE o array JSON, sem explicações:
-[
-  {{
-    ""nomeProduto"": ""Nome completo do produto"",
-    ""precoOferta"": ""R$ 0,00"",
-    ""descricao"": ""Breve descrição do produto"",
-    ""imagemUrl"": ""https://images.unsplash.com/photo-ID?w=400"",
-    ""loja"": ""Nome da loja"",
-    ""linkProduto"": ""https://url-de-busca-na-loja""
-  }}
-]";
+JSON array de {count} itens:
+[{{""nomeProduto"":""nome com marca"",""precoOferta"":""R$ 99,90"",""precoOriginal"":""R$ 149,90"",""desconto"":""33%"",""descricao"":""descrição"",""imagemUrl"":"""",""loja"":""{lojas.Split(',')[0].Trim()}"",""linkProduto"":""""}}]";
         }
 
         public static string BuildCategorySeedPrompt(string categoria, int quantidade)
         {
-            var categoriaLimpa = string.IsNullOrWhiteSpace(categoria) ? "Produtos Gerais" : categoria.Trim();
-            var qtd = quantidade <= 0 ? 10 : quantidade;
+            var cat = string.IsNullOrWhiteSpace(categoria) ? "Tecnologia" : categoria.Trim();
+            return BuildRecommendationPrompt(new[] { cat });
+        }
 
-            return $@"Retorne exatamente {qtd} produtos em oferta da categoria ""{categoriaLimpa}"" do e-commerce brasileiro.
+        private static string ResolverLojas(string tema)
+        {
+            var t = tema.ToLowerInvariant();
+            foreach (var (key, lojas) in LojasPorTema)
+                if (t.Contains(key.ToLower())) return lojas;
+            return LojasGeral;
+        }
 
-Lojas permitidas: {LojasBrasil}.
-
-Regras obrigatórias:
-- Retorne EXATAMENTE {qtd} itens no array
-- Cada item deve ter: nomeProduto, precoOferta (formato ""R$ 0,00""), descricao, imagemUrl, loja, linkProduto
-- linkProduto deve ser a URL de busca da loja pelo produto
-- imagemUrl use URLs do Unsplash relacionadas ao produto
-- Distribua entre as lojas disponíveis
-- Preços devem ser realistas para o mercado brasileiro atual
-
-Retorne SOMENTE o array JSON, sem explicações:
-[
-  {{
-    ""nomeProduto"": ""Nome completo do produto"",
-    ""precoOferta"": ""R$ 0,00"",
-    ""descricao"": ""Breve descrição do produto"",
-    ""imagemUrl"": ""https://images.unsplash.com/photo-ID?w=400"",
-    ""loja"": ""Nome da loja"",
-    ""linkProduto"": ""https://url-de-busca-na-loja""
-  }}
-]";
+        private static string ResolverFaixaPreco(string tema)
+        {
+            var t = tema.ToLowerInvariant();
+            foreach (var (key, faixa) in FaixasPreco)
+                if (t.Contains(key.ToLower())) return faixa;
+            return "R$ 50-500";
         }
     }
 }
