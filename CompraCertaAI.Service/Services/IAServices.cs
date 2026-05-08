@@ -26,7 +26,7 @@ namespace CompraCertaAI.Service.Services
         {
             var url    = _config["Groq:ApiUrl"] ?? "https://api.groq.com/openai/v1/chat/completions";
             var apiKey = _config["Groq:ApiKey"];
-            var model  = _config["Groq:Model"]  ?? "llama-3.1-8b-instant";
+            var model  = _config["Groq:Model"]  ?? "llama3-8b-8192";
 
             if (string.IsNullOrWhiteSpace(apiKey))
                 throw new InvalidOperationException(
@@ -50,8 +50,8 @@ namespace CompraCertaAI.Service.Services
                     },
                     new { role = "user", content = prompt }
                 },
-                temperature = 0.4,
-                max_tokens  = 1800
+                temperature = 0.2,
+                max_tokens  = 2400
             };
 
             var content = new StringContent(

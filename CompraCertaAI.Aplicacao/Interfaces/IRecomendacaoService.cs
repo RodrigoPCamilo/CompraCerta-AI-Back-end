@@ -6,6 +6,8 @@ namespace CompraCertaAI.Aplicacao.Interfaces
 {
     public interface IRecomendacaoService
     {
-        Task<IEnumerable<ProdutoDTO>> ObterRecomendacoesAsync(IEnumerable<int> categoriaIds, int limite = 10);
+        Task<IEnumerable<ProdutoDTO>> ObterRecomendacoesAsync(
+            IEnumerable<int> categoriaIds,
+            int limite = 10);
     }
 }
